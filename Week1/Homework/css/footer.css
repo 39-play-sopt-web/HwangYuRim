@@ -1,0 +1,17 @@
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  margin-top: 0;
+  color: var(--text);
+  background: var(--footer-pink);
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0;
+  padding: 0 20px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
