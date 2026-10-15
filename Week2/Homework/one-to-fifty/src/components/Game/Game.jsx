@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { RECORDS_STORAGE_KEY } from '../../constants/storage.js'
 import { createTiles } from '../../utils/game.js'
 import {
   ConfirmButton,
@@ -12,7 +13,6 @@ import {
   Status,
 } from './Game.styles.js'
 
-const RECORDS_STORAGE_KEY = 'oneToFiftyRecords'
 const TIMER_INTERVAL = 10
 
 function ResultModal({ level, playTime, onConfirm }) {

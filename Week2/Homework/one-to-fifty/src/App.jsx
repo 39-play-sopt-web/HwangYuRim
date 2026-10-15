@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Game from './components/Game/Game.jsx'
 import Header from './components/Header/Header.jsx'
+import Ranking from './components/Ranking/Ranking.jsx'
 import { LEVELS } from './constants/levels.js'
 import { AppShell, MainContent } from './App.styles.js'
 
@@ -49,6 +50,7 @@ function App() {
             onTimeChange={setElapsedTime}
           />
         )}
+        {!isGameView && <Ranking />}
       </MainContent>
     </AppShell>
   )
