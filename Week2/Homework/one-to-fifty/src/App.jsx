@@ -8,6 +8,7 @@ const VIEW = {
   game: 'game',
   ranking: 'ranking',
 }
+const LEVEL_OPTIONS = Object.values(LEVELS)
 
 function App() {
   const [activeView, setActiveView] = useState(VIEW.game)
@@ -25,19 +26,28 @@ function App() {
     }
   }
 
+  const handleLevelChange = (level) => {
+    setSelectedLevel(level)
+    setElapsedTime('0.00')
+  }
+
   return (
     <AppShell>
       <Header
         activeView={activeView}
-        levels={[LEVELS[1]]}
+        levels={LEVEL_OPTIONS}
         selectedLevel={selectedLevel}
         elapsedTime={elapsedTime}
         onViewChange={handleViewChange}
-        onLevelChange={setSelectedLevel}
+        onLevelChange={handleLevelChange}
       />
       <MainContent aria-label={isGameView ? '게임 화면' : '랭킹 화면'}>
         {isGameView && (
-          <Game level={selectedLevelConfig} onTimeChange={setElapsedTime} />
+          <Game
+            key={selectedLevel}
+            level={selectedLevelConfig}
+            onTimeChange={setElapsedTime}
+          />
         )}
       </MainContent>
     </AppShell>

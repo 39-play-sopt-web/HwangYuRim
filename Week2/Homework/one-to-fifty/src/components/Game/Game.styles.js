@@ -40,10 +40,60 @@ export const NumberButton = styled.button`
   border-radius: ${({ theme }) => theme.radius.medium};
   font-size: 24px;
   font-weight: 700;
+  transition:
+    background-color 100ms ease,
+    transform 100ms ease;
+
+  &:active:not(:disabled) {
+    background-color: ${({ theme }) => theme.colors.primarySoft};
+    transform: scale(0.94);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:disabled {
     background-color: transparent;
     border-style: dashed;
     cursor: default;
   }
+`
+
+export const ModalDialog = styled.dialog`
+  width: min(360px, calc(100% - 40px));
+  padding: 32px;
+  gap: 24px;
+  text-align: center;
+  background-color: ${({ theme }) => theme.colors.surface};
+  border: 0;
+  border-radius: ${({ theme }) => theme.radius.medium};
+  box-shadow: ${({ theme }) => theme.shadow.floating};
+
+  &[open] {
+    display: grid;
+  }
+
+  &::backdrop {
+    background-color: rgb(41 38 42 / 55%);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+`
+
+export const ModalTime = styled.strong`
+  font-size: 36px;
+  font-variant-numeric: tabular-nums;
+`
+
+export const ConfirmButton = styled.button`
+  height: 44px;
+  color: ${({ theme }) => theme.colors.surface};
+  background-color: ${({ theme }) => theme.colors.primary};
+  border: 0;
+  border-radius: ${({ theme }) => theme.radius.small};
+  font-weight: 700;
 `

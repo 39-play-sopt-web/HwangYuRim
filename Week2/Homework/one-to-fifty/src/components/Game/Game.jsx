@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { createTiles } from '../../utils/game.js'
 import {
+  ConfirmButton,
   GameBoard,
   GameSection,
+  ModalDialog,
+  ModalTime,
   NextNumber,
   NumberButton,
   Status,
@@ -11,9 +15,40 @@ import {
 const RECORDS_STORAGE_KEY = 'oneToFiftyRecords'
 const TIMER_INTERVAL = 10
 
+function ResultModal({ level, playTime, onConfirm }) {
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    dialog.showModal()
+
+    return () => dialog.close()
+  }, [])
+
+  const handleCancel = (event) => {
+    event.preventDefault()
+  }
+
+  return createPortal(
+    <ModalDialog
+      ref={dialogRef}
+      aria-labelledby="result-title"
+      onCancel={handleCancel}
+    >
+      <h2 id="result-title">🆒 Level {level} 야호~!</h2>
+      <ModalTime>{playTime}초</ModalTime>
+      <ConfirmButton type="button" autoFocus onClick={onConfirm}>
+        확인
+      </ConfirmButton>
+    </ModalDialog>,
+    document.body,
+  )
+}
+
 function Game({ level, onTimeChange }) {
   const [tiles, setTiles] = useState(() => createTiles(level.maxNumber))
   const [nextNumber, setNextNumber] = useState(1)
+  const [completedTime, setCompletedTime] = useState(null)
   const startedAtRef = useRef(null)
   const timerIdRef = useRef(null)
 
@@ -27,6 +62,7 @@ function Game({ level, onTimeChange }) {
     startedAtRef.current = null
     setTiles(createTiles(level.maxNumber))
     setNextNumber(1)
+    setCompletedTime(null)
     onTimeChange('0.00')
   }
 
@@ -41,7 +77,7 @@ function Game({ level, onTimeChange }) {
   const saveRecord = (playTime) => {
     const records = JSON.parse(
       localStorage.getItem(RECORDS_STORAGE_KEY) ?? '[]',
-    );
+    )
 
     records.push({
       playedAt: new Date().toISOString(),
@@ -57,12 +93,28 @@ function Game({ level, onTimeChange }) {
     stopTimer()
     onTimeChange(playTime)
     saveRecord(playTime)
-    window.alert(`Level ${level.value} 야호~!\n${playTime}초`)
-    resetGame()
+    setCompletedTime(playTime)
   }
 
   const handleNumberClick = (event, clickedNumber, tileIndex) => {
-    if (clickedNumber !== nextNumber) return;
+    if (clickedNumber !== nextNumber) {
+      const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches
+
+      if (!prefersReducedMotion) {
+        event.currentTarget.animate(
+          [
+            { transform: 'translateX(0)' },
+            { transform: 'translateX(-6px)' },
+            { transform: 'translateX(6px)' },
+            { transform: 'translateX(0)' },
+          ],
+          { duration: 220, easing: 'ease-in-out' },
+        )
+      }
+      return
+    }
 
     if (clickedNumber === 1) {
       startTimer(event.timeStamp)
@@ -87,7 +139,8 @@ function Game({ level, onTimeChange }) {
   return (
     <GameSection>
       <Status>
-        다음 숫자 <NextNumber>{nextNumber}</NextNumber>
+        다음 숫자{' '}
+        <NextNumber>{completedTime ? 'Pass' : nextNumber}</NextNumber>
         <span>
           ({nextNumber} / {level.maxNumber})
         </span>
@@ -106,6 +159,14 @@ function Game({ level, onTimeChange }) {
           </NumberButton>
         ))}
       </GameBoard>
+
+      {completedTime && (
+        <ResultModal
+          level={level.value}
+          playTime={completedTime}
+          onConfirm={resetGame}
+        />
+      )}
     </GameSection>
   )
 }

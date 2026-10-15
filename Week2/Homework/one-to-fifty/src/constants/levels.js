@@ -5,4 +5,16 @@ export const LEVELS = {
     size: 3,
     maxNumber: 18,
   },
+  2: {
+    value: 2,
+    label: 'Level 2 (4×4)',
+    size: 4,
+    maxNumber: 32,
+  },
+  3: {
+    value: 3,
+    label: 'Level 3 (5×5)',
+    size: 5,
+    maxNumber: 50,
+  },
 }
