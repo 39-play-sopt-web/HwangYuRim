@@ -12,7 +12,9 @@ import {
 function loadRecords() {
   const records = JSON.parse(localStorage.getItem(RECORDS_STORAGE_KEY) ?? "[]");
 
-  return records.sort((a, b) => a.playTime - b.playTime);
+  return records.sort(
+    (a, b) => b.level - a.level || a.playTime - b.playTime,
+  );
 }
 
 function Ranking() {
