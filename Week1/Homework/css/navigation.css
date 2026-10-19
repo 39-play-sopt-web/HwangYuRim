@@ -1,0 +1,39 @@
+.table-of-contents {
+  position: sticky;
+  top: calc(var(--header-height) + 76px);
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 220px);
+}
+
+.table-of-contents a {
+  display: flex;
+  align-items: center;
+  min-height: 55px;
+  padding: 0 34px;
+  border-radius: 23px;
+  border-bottom: 3px solid var(--page-gray);
+  color: #4e494c;
+  background: var(--white);
+  font-size: 1.25rem;
+  font-weight: 900;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    padding-left 180ms ease;
+}
+
+.table-of-contents a:first-child {
+  border-radius: 27px 27px 15px 15px;
+}
+
+.table-of-contents a:last-child {
+  border-bottom: 0;
+  border-radius: 15px 15px 27px 27px;
+}
+
+.table-of-contents a:hover {
+  padding-left: 42px;
+  color: var(--black);
+  background: var(--pink);
+}
