@@ -11,9 +11,7 @@ interface MovieCardProps {
 export default function MovieCard({ movie }: MovieCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const posterUrl = getMovieImageUrl(movie.poster_path);
-  const rating = movie.vote_average.toLocaleString('ko-KR', {
-    maximumFractionDigits: 3,
-  });
+  const rating = (Math.floor(movie.vote_average * 10) / 10).toFixed(1);
 
   return (
     <Card to={`/movies/${movie.id}`}>
