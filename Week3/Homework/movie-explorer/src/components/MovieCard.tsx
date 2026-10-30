@@ -11,6 +11,9 @@ interface MovieCardProps {
 export default function MovieCard({ movie }: MovieCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const posterUrl = getMovieImageUrl(movie.poster_path);
+  const rating = movie.vote_average.toLocaleString('ko-KR', {
+    maximumFractionDigits: 3,
+  });
 
   return (
     <Card to={`/movies/${movie.id}`}>
@@ -37,8 +40,8 @@ export default function MovieCard({ movie }: MovieCardProps) {
           )}
         </ReleaseDate>
         <Overview>{movie.overview.trim() || '등록된 줄거리가 없습니다.'}</Overview>
-        <Rating aria-label={`평점 10점 만점에 ${movie.vote_average.toFixed(1)}점`}>
-          ★ {movie.vote_average.toFixed(1)} / 10
+        <Rating aria-label={`평점 10점 만점에 ${rating}점`}>
+          ★ {rating} / 10
         </Rating>
       </Information>
     </Card>

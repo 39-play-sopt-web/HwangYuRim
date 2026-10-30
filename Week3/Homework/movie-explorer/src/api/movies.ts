@@ -1,16 +1,17 @@
-import type { MovieDetail, MovieListResponse } from '../types/movie';
+import type { MovieDetail, MovieListParams, MovieListResponse } from '../types/movie';
 import { apiClient } from './client';
 
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 export async function fetchMovies(
-  page = 1,
+  { page = 1, ...ratingParams }: MovieListParams = {},
   signal?: AbortSignal,
 ): Promise<MovieListResponse> {
   const { data } = await apiClient.get<MovieListResponse>('/discover/movie', {
     params: {
       page,
       sort_by: 'popularity.desc',
+      ...ratingParams,
     },
     signal,
   });

@@ -13,6 +13,15 @@ export interface MovieListResponse {
   total_pages: number;
 }
 
+export interface MovieRatingParams {
+  'vote_average.gte'?: number;
+  'vote_average.lte'?: number;
+}
+
+export interface MovieListParams extends MovieRatingParams {
+  page?: number;
+}
+
 export interface MovieDetail extends Movie {
   original_title: string;
   backdrop_path: string | null;

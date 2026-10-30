@@ -3,9 +3,13 @@ import { isAxiosError } from 'axios';
 import styled from 'styled-components';
 import { fetchMovies } from '../api/movies';
 import MovieCard from '../components/MovieCard';
+import RatingFilter from '../components/RatingFilter';
+import { RATING_FILTERS } from '../constants/ratingFilters';
+import type { RatingFilterOption } from '../constants/ratingFilters';
 import type { Movie } from '../types/movie';
 
 export default function MovieListPage() {
+  const [selectedFilter, setSelectedFilter] = useState(RATING_FILTERS[0]);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +17,7 @@ export default function MovieListPage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetchMovies(1, controller.signal)
+    fetchMovies({ page: 1, ...selectedFilter.params }, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) {
           setMovies(data.results);
@@ -35,12 +39,25 @@ export default function MovieListPage() {
       });
 
     return () => controller.abort();
-  }, []);
+  }, [selectedFilter]);
+
+  function handleFilterChange(filter: RatingFilterOption) {
+    if (filter.value === selectedFilter.value) return;
+
+    setSelectedFilter(filter);
+    setMovies([]);
+    setError(null);
+    setIsLoading(true);
+  }
 
   return (
     <section aria-labelledby="movie-list-title" aria-busy={isLoading}>
       <h1 id="movie-list-title">영화 목록</h1>
       <Description>인기순으로 영화를 둘러보세요.</Description>
+      <RatingFilter
+        selectedValue={selectedFilter.value}
+        onChange={handleFilterChange}
+      />
 
       {isLoading ? (
         <p role="status">영화 목록을 불러오는 중이에요.</p>
