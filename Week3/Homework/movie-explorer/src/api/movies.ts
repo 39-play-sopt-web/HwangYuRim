@@ -4,13 +4,13 @@ import { apiClient } from './client';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 export async function fetchMovies(
-  { page = 1, ...ratingParams }: MovieListParams = {},
+  { page = 1, sort_by = 'popularity.desc', ...ratingParams }: MovieListParams = {},
   signal?: AbortSignal,
 ): Promise<MovieListResponse> {
   const { data } = await apiClient.get<MovieListResponse>('/discover/movie', {
     params: {
       page,
-      sort_by: 'popularity.desc',
+      sort_by,
       ...ratingParams,
     },
     signal,

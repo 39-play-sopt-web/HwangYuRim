@@ -7,13 +7,19 @@ import MovieCard from '../components/MovieCard';
 import RatingFilter from '../components/RatingFilter';
 import { RATING_FILTERS } from '../constants/ratingFilters';
 import type { RatingFilterOption } from '../constants/ratingFilters';
-import type { Movie } from '../types/movie';
+import type { Movie, MovieSort } from '../types/movie';
 
 const MAX_TMDB_PAGE = 500;
+const SORT_OPTIONS: { value: MovieSort; label: string }[] = [
+  { value: 'popularity.desc', label: '인기순' },
+  { value: 'vote_average.desc', label: '평점순' },
+  { value: 'primary_release_date.desc', label: '최신 개봉순 (예정작 포함)' },
+];
 
 export default function MovieListPage() {
   const isListPage = useMatch('/') !== null;
   const [selectedFilter, setSelectedFilter] = useState(RATING_FILTERS[0]);
+  const [selectedSort, setSelectedSort] = useState<MovieSort>(SORT_OPTIONS[0].value);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -46,13 +52,13 @@ export default function MovieListPage() {
   }, [isListPage]);
 
   useEffect(() => {
-    const requestKey = `${selectedFilter.value}:${page}`;
+    const requestKey = `${selectedFilter.value}:${selectedSort}:${page}`;
     if (!isListPage || completedRequest.current === requestKey) return;
 
     const controller = new AbortController();
     isRequestInFlight.current = true;
 
-    fetchMovies({ page, ...selectedFilter.params }, controller.signal)
+    fetchMovies({ page, sort_by: selectedSort, ...selectedFilter.params }, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) {
           completedRequest.current = requestKey;
@@ -92,7 +98,7 @@ export default function MovieListPage() {
       controller.abort();
       isRequestInFlight.current = false;
     };
-  }, [selectedFilter, page, isListPage]);
+  }, [selectedFilter, selectedSort, page, isListPage]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -121,9 +127,21 @@ export default function MovieListPage() {
   function handleFilterChange(filter: RatingFilterOption) {
     if (filter.value === selectedFilter.value) return;
 
+    setSelectedFilter(filter);
+    resetMovieList();
+  }
+
+  function handleSortChange(value: string) {
+    const option = SORT_OPTIONS.find((option) => option.value === value);
+    if (!option || option.value === selectedSort) return;
+
+    setSelectedSort(option.value);
+    resetMovieList();
+  }
+
+  function resetMovieList() {
     isRequestInFlight.current = true;
     completedRequest.current = null;
-    setSelectedFilter(filter);
     setMovies([]);
     setPage(1);
     setHasMore(true);
@@ -136,7 +154,20 @@ export default function MovieListPage() {
       {/* 상세 화면에서는 숨겨서 목록 상태와 카드의 이미지 상태를 유지한다. */}
       <section hidden={!isListPage} aria-labelledby="movie-list-title" aria-busy={isLoading}>
         <h1 id="movie-list-title">영화 목록</h1>
-        <Description>인기순으로 영화를 둘러보세요.</Description>
+        <Description>평점과 정렬 조건으로 영화를 둘러보세요.</Description>
+        <SortControl>
+          정렬
+          <SortSelect
+            value={selectedSort}
+            onChange={(event) => handleSortChange(event.target.value)}
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </SortSelect>
+        </SortControl>
         <RatingFilter
           selectedValue={selectedFilter.value}
           onChange={handleFilterChange}
@@ -173,6 +204,27 @@ export default function MovieListPage() {
 
 const Description = styled.p`
   margin: 0 0 32px;
+`;
+
+const SortControl = styled.label`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+`;
+
+const SortSelect = styled.select`
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.dark};
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.text};
+  color-scheme: dark;
+  font: inherit;
+  cursor: pointer;
 `;
 
 const MovieGrid = styled.ul`

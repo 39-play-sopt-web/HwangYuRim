@@ -18,8 +18,11 @@ export interface MovieRatingParams {
   'vote_average.lte'?: number;
 }
 
+export type MovieSort = 'popularity.desc' | 'vote_average.desc' | 'primary_release_date.desc';
+
 export interface MovieListParams extends MovieRatingParams {
   page?: number;
+  sort_by?: MovieSort;
 }
 
 export interface MovieDetail extends Movie {
