@@ -25,6 +25,11 @@ export interface MovieListParams extends MovieRatingParams {
   sort_by?: MovieSort;
 }
 
+export interface MovieSearchParams {
+  query: string;
+  page?: number;
+}
+
 export interface MovieDetail extends Movie {
   original_title: string;
   original_language: string;

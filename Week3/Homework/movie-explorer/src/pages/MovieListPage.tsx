@@ -2,8 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { Outlet, useMatch } from 'react-router';
 import styled from 'styled-components';
-import { fetchMovies } from '../api/movies';
+import { fetchMovies, searchMovies } from '../api/movies';
 import MovieCard from '../components/MovieCard';
+import MovieSearch from '../components/MovieSearch';
 import RatingFilter from '../components/RatingFilter';
 import { RATING_FILTERS } from '../constants/ratingFilters';
 import type { RatingFilterOption } from '../constants/ratingFilters';
@@ -16,10 +17,21 @@ const SORT_OPTIONS: { value: MovieSort; label: string }[] = [
   { value: 'primary_release_date.desc', label: '최신 개봉순 (예정작 포함)' },
 ];
 
+interface MovieListSnapshot {
+  movies: Movie[];
+  page: number;
+  hasMore: boolean;
+  isLoading: boolean;
+  error: string | null;
+  completedRequest: string | null;
+  scrollPosition: number;
+}
+
 export default function MovieListPage() {
   const isListPage = useMatch('/') !== null;
   const [selectedFilter, setSelectedFilter] = useState(RATING_FILTERS[0]);
   const [selectedSort, setSelectedSort] = useState<MovieSort>(SORT_OPTIONS[0].value);
+  const [searchQuery, setSearchQuery] = useState('');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -29,6 +41,7 @@ export default function MovieListPage() {
   const isRequestInFlight = useRef(false);
   const completedRequest = useRef<string | null>(null);
   const scrollPosition = useRef(0);
+  const exploreSnapshot = useRef<MovieListSnapshot | null>(null);
 
   useLayoutEffect(() => {
     const previousRestoration = window.history.scrollRestoration;
@@ -49,16 +62,22 @@ export default function MovieListPage() {
       window.removeEventListener('scroll', saveScrollPosition);
       window.history.scrollRestoration = previousRestoration;
     };
-  }, [isListPage]);
+  }, [isListPage, searchQuery]);
 
   useEffect(() => {
-    const requestKey = `${selectedFilter.value}:${selectedSort}:${page}`;
+    const requestKey = searchQuery
+      ? `search:${searchQuery}:${page}`
+      : `discover:${selectedFilter.value}:${selectedSort}:${page}`;
     if (!isListPage || completedRequest.current === requestKey) return;
 
     const controller = new AbortController();
     isRequestInFlight.current = true;
 
-    fetchMovies({ page, sort_by: selectedSort, ...selectedFilter.params }, controller.signal)
+    const request = searchQuery
+      ? searchMovies({ query: searchQuery, page }, controller.signal)
+      : fetchMovies({ page, sort_by: selectedSort, ...selectedFilter.params }, controller.signal);
+
+    request
       .then((data) => {
         if (!controller.signal.aborted) {
           completedRequest.current = requestKey;
@@ -98,7 +117,7 @@ export default function MovieListPage() {
       controller.abort();
       isRequestInFlight.current = false;
     };
-  }, [selectedFilter, selectedSort, page, isListPage]);
+  }, [selectedFilter, selectedSort, searchQuery, page, isListPage]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -139,6 +158,42 @@ export default function MovieListPage() {
     resetMovieList();
   }
 
+  function handleSearch(query: string) {
+    if (!query || query === searchQuery) return;
+
+    if (!searchQuery) {
+      exploreSnapshot.current = {
+        movies,
+        page,
+        hasMore,
+        isLoading,
+        error,
+        completedRequest: completedRequest.current,
+        scrollPosition: scrollPosition.current,
+      };
+    }
+
+    setSearchQuery(query);
+    scrollPosition.current = 0;
+    resetMovieList();
+  }
+
+  function clearSearch() {
+    const snapshot = exploreSnapshot.current;
+    if (!snapshot) return;
+
+    isRequestInFlight.current = snapshot.isLoading;
+    completedRequest.current = snapshot.completedRequest;
+    scrollPosition.current = snapshot.scrollPosition;
+    setSearchQuery('');
+    setMovies(snapshot.movies);
+    setPage(snapshot.page);
+    setHasMore(snapshot.hasMore);
+    setIsLoading(snapshot.isLoading);
+    setError(snapshot.error);
+    exploreSnapshot.current = null;
+  }
+
   function resetMovieList() {
     isRequestInFlight.current = true;
     completedRequest.current = null;
@@ -153,25 +208,38 @@ export default function MovieListPage() {
     <>
       {/* 상세 화면에서는 숨겨서 목록 상태와 카드의 이미지 상태를 유지한다. */}
       <section hidden={!isListPage} aria-labelledby="movie-list-title" aria-busy={isLoading}>
-        <h1 id="movie-list-title">영화 목록</h1>
-        <Description>평점과 정렬 조건으로 영화를 둘러보세요.</Description>
-        <SortControl>
-          정렬
-          <SortSelect
-            value={selectedSort}
-            onChange={(event) => handleSortChange(event.target.value)}
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </SortSelect>
-        </SortControl>
-        <RatingFilter
-          selectedValue={selectedFilter.value}
-          onChange={handleFilterChange}
+        <h1 id="movie-list-title">{searchQuery ? '영화 검색 결과' : '영화 목록'}</h1>
+        <Description>
+          {searchQuery
+            ? `“${searchQuery}” 검색 결과입니다.`
+            : '평점과 정렬 조건으로 영화를 둘러보세요.'}
+        </Description>
+        <MovieSearch
+          isSearching={Boolean(searchQuery)}
+          onSearch={handleSearch}
+          onClear={clearSearch}
         />
+        {!searchQuery && (
+          <>
+            <SortControl>
+              정렬
+              <SortSelect
+                value={selectedSort}
+                onChange={(event) => handleSortChange(event.target.value)}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </SortSelect>
+            </SortControl>
+            <RatingFilter
+              selectedValue={selectedFilter.value}
+              onChange={handleFilterChange}
+            />
+          </>
+        )}
 
         {movies.length > 0 && (
           <MovieGrid>
@@ -185,12 +253,18 @@ export default function MovieListPage() {
 
         {isLoading && (
           <StatusMessage role="status">
-            {page === 1 ? '영화 목록을 불러오는 중이에요.' : '다음 페이지를 불러오는 중이에요.'}
+            {page > 1
+              ? '다음 페이지를 불러오는 중이에요.'
+              : searchQuery ? '검색 결과를 불러오는 중이에요.' : '영화 목록을 불러오는 중이에요.'}
           </StatusMessage>
         )}
         {error && <StatusMessage role="alert">{error}</StatusMessage>}
         {!isLoading && !error && movies.length === 0 && (
-          <StatusMessage role="status">조건에 맞는 영화가 없습니다.</StatusMessage>
+          <StatusMessage role="status">
+            {searchQuery
+              ? '검색 결과가 없습니다. 다른 제목으로 검색해주세요.'
+              : '조건에 맞는 영화가 없습니다.'}
+          </StatusMessage>
         )}
         {!isLoading && !error && movies.length > 0 && !hasMore && (
           <StatusMessage role="status">마지막 영화까지 모두 확인했어요.</StatusMessage>
