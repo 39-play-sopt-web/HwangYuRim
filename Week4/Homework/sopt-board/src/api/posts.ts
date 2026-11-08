@@ -1,3 +1,5 @@
+import { queryOptions } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { client } from './client';
 import { readAuth } from '../auth';
 import type { CreatePostInput, Post, PostSlice, UpdatePostInput } from '../types/post';
@@ -41,6 +43,18 @@ export async function fetchPost(postId: number, signal?: AbortSignal): Promise<P
   }
 
   return data.data;
+}
+
+export function postDetailQueryOptions(postId: number) {
+  return queryOptions({
+    queryKey: ['posts', 'detail', postId],
+    queryFn: ({ signal }) => fetchPost(postId, signal),
+    staleTime: 30000,
+    retry: (failureCount, error) => {
+      if (isAxiosError(error) && error.response?.status === 404) return false;
+      return failureCount < 3;
+    },
+  });
 }
 
 export async function createPost(input: CreatePostInput): Promise<Post> {

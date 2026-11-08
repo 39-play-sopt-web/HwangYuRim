@@ -1,5 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import styled from 'styled-components';
 import { Link } from 'react-router';
+import { postDetailQueryOptions } from '../api/posts';
 import type { Post } from '../types/post';
 
 interface PostCardProps {
@@ -7,8 +9,18 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post }: PostCardProps) {
+  const queryClient = useQueryClient();
+
+  function prefetchPost() {
+    void queryClient.prefetchQuery(postDetailQueryOptions(post.id));
+  }
+
   return (
-    <Card to={`/posts/${post.id}`}>
+    <Card
+      to={`/posts/${post.id}`}
+      onMouseEnter={prefetchPost}
+      onFocus={prefetchPost}
+    >
       <Title>{post.title}</Title>
       <Preview>{post.content}</Preview>
       <Information>

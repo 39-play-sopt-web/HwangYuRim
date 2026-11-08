@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Link, useNavigate, useParams } from 'react-router';
 import styled from 'styled-components';
-import { deletePost, fetchPost } from '../api/posts';
+import { deletePost, postDetailQueryOptions } from '../api/posts';
 import { readAuth } from '../auth';
 
 export default function PostDetailPage() {
@@ -12,13 +12,8 @@ export default function PostDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: post, error, isPending, isError, isFetching, refetch } = useQuery({
-    queryKey: ['posts', 'detail', postId],
-    queryFn: ({ signal }) => fetchPost(postId, signal),
+    ...postDetailQueryOptions(postId),
     enabled: isValidId,
-    retry: (failureCount, error) => {
-      if (isAxiosError(error) && error.response?.status === 404) return false;
-      return failureCount < 3;
-    },
   });
   const deletePostMutation = useMutation({
     mutationFn: deletePost,

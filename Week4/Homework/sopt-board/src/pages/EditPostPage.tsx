@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Link, useNavigate, useParams } from 'react-router';
 import styled from 'styled-components';
-import { fetchPost, updatePost } from '../api/posts';
+import { postDetailQueryOptions, updatePost } from '../api/posts';
 import { readAuth } from '../auth';
 import type { Post, UpdatePostInput } from '../types/post';
 
@@ -13,13 +13,8 @@ export default function EditPostPage() {
   const postId = Number(postIdParam);
   const isValidId = /^[1-9]\d*$/.test(postIdParam) && Number.isSafeInteger(postId);
   const { data: post, error, isPending, isError, isFetching, refetch } = useQuery({
-    queryKey: ['posts', 'detail', postId],
-    queryFn: ({ signal }) => fetchPost(postId, signal),
+    ...postDetailQueryOptions(postId),
     enabled: isValidId,
-    retry: (failureCount, error) => {
-      if (isAxiosError(error) && error.response?.status === 404) return false;
-      return failureCount < 3;
-    },
   });
 
   return (
