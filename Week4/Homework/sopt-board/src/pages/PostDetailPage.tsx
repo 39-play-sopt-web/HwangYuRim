@@ -1,13 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import styled from 'styled-components';
-import { fetchPost } from '../api/posts';
+import { deletePost, fetchPost } from '../api/posts';
 
 export default function PostDetailPage() {
   const { postId: postIdParam = '' } = useParams();
   const postId = Number(postIdParam);
   const isValidId = /^[1-9]\d*$/.test(postIdParam) && Number.isSafeInteger(postId);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: post, error, isPending, isError, isFetching, refetch } = useQuery({
     queryKey: ['posts', 'detail', postId],
     queryFn: ({ signal }) => fetchPost(postId, signal),
@@ -17,6 +19,32 @@ export default function PostDetailPage() {
       return failureCount < 3;
     },
   });
+  const deletePostMutation = useMutation({
+    mutationFn: deletePost,
+    onSuccess: async (_data, deletedPostId) => {
+      await queryClient.cancelQueries({ queryKey: ['posts', 'detail', deletedPostId], exact: true });
+      queryClient.removeQueries({ queryKey: ['posts', 'detail', deletedPostId], exact: true });
+      await queryClient.invalidateQueries({ queryKey: ['posts', 'list'] });
+    },
+  });
+
+  function handleDelete() {
+    if (!post || deletePostMutation.isPending) return;
+    if (!window.confirm('정말 삭제하시겠어요?')) return;
+
+    deletePostMutation.mutate(post.id, {
+      onSuccess: () => navigate('/posts', { replace: true }),
+      onError: (error) => {
+        let message = '게시글 삭제에 실패했어요. 연결 상태와 회원 코드를 확인하고 다시 시도해주세요.';
+        if (!isAxiosError(error)) {
+          message = error.message;
+        } else if (error.response?.status === 403) {
+          message = '삭제 권한이 없어요. 글을 작성할 때 사용한 회원 코드인지 확인해주세요.';
+        }
+        window.alert(message);
+      },
+    });
+  }
 
   return (
     <section>
@@ -48,7 +76,22 @@ export default function PostDetailPage() {
           </Information>
           <Content>{post.content}</Content>
           <Actions>
-            <EditLink to={`/posts/${post.id}/edit`}>수정</EditLink>
+            <EditLink
+              to={`/posts/${post.id}/edit`}
+              aria-disabled={deletePostMutation.isPending}
+              onClick={(event) => {
+                if (deletePostMutation.isPending) event.preventDefault();
+              }}
+            >
+              수정
+            </EditLink>
+            <DeleteButton
+              type="button"
+              disabled={deletePostMutation.isPending}
+              onClick={handleDelete}
+            >
+              {deletePostMutation.isPending ? '삭제 중…' : '삭제'}
+            </DeleteButton>
           </Actions>
         </Article>
       )}
@@ -104,6 +147,8 @@ const Message = styled.p`
 const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
@@ -115,6 +160,31 @@ const EditLink = styled(Link)`
   border-radius: 8px;
   color: ${({ theme }) => theme.colors.text};
   text-decoration: none;
+
+  &[aria-disabled='true'] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const DeleteButton = styled.button`
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.surface};
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.primaryHover};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const ErrorNotice = styled.div`

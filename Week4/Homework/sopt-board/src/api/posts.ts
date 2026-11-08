@@ -76,3 +76,18 @@ export async function updatePost(postId: number, input: UpdatePostInput): Promis
 
   return data.data;
 }
+
+export async function deletePost(postId: number): Promise<void> {
+  const auth = readAuth();
+  if (!auth) {
+    throw new Error('글을 삭제하려면 먼저 회원 코드를 발급받아주세요.');
+  }
+
+  const { data } = await client.delete<PostResponse<null>>(`/posts/${postId}`, {
+    headers: { Authorization: auth.authorizationCode },
+  });
+
+  if (!data.isSuccess) {
+    throw new Error('게시글 삭제에 실패했어요. 다시 시도해주세요.');
+  }
+}
