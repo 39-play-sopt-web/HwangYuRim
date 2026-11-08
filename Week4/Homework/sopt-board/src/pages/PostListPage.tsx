@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { SubmitEvent } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
+import { useMatch } from 'react-router';
 import styled from 'styled-components';
 import { fetchPosts } from '../api/posts';
 import PostCard from '../components/PostCard';
@@ -10,6 +11,9 @@ export default function PostListPage() {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const lastPostRef = useRef<HTMLLIElement>(null);
+  const scrollPosition = useRef(0);
+  const isListPage = useMatch('/posts') !== null;
+  const queryClient = useQueryClient();
   const {
     data,
     error,
@@ -23,6 +27,10 @@ export default function PostListPage() {
     refetch,
   } = useInfiniteQuery({
     queryKey: ['posts', 'list', 'infinite', { keyword }],
+    enabled: isListPage,
+    staleTime: Infinity,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     initialPageParam: 0,
     queryFn: ({ pageParam, signal }) => fetchPosts({
       keyword: keyword || undefined,
@@ -40,9 +48,34 @@ export default function PostListPage() {
     ? '검색어는 2~50자로 입력해주세요.'
     : '';
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+
+    function saveScrollPosition() {
+      scrollPosition.current = window.scrollY;
+    }
+
+    if (isListPage) {
+      window.scrollTo(0, scrollPosition.current);
+      window.addEventListener('scroll', saveScrollPosition, { passive: true });
+    } else {
+      void queryClient.cancelQueries({
+        queryKey: ['posts', 'list', 'infinite', { keyword }],
+        exact: true,
+      });
+      window.scrollTo(0, 0);
+    }
+
+    return () => {
+      window.removeEventListener('scroll', saveScrollPosition);
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, [isListPage, keyword, queryClient]);
+
+  useLayoutEffect(() => {
     const target = lastPostRef.current;
-    if (!target || !hasNextPage || isFetching || isError) return;
+    if (!isListPage || !target || !hasNextPage || isFetching || isError) return;
 
     let active = true;
     let requested = false;
@@ -58,7 +91,15 @@ export default function PostListPage() {
       active = false;
       observer.disconnect();
     };
-  }, [fetchNextPage, hasNextPage, isFetching, isError, keyword, posts.length]);
+  }, [fetchNextPage, hasNextPage, isFetching, isError, isListPage, keyword, posts.length]);
+
+  function changeKeyword(nextKeyword: string) {
+    if (nextKeyword === keyword) return;
+
+    scrollPosition.current = 0;
+    window.scrollTo(0, 0);
+    setKeyword(nextKeyword);
+  }
 
   function handleRetry() {
     if (isFetching) return;
@@ -79,11 +120,17 @@ export default function PostListPage() {
       return;
     }
 
-    setKeyword(trimmedInput);
+    changeKeyword(trimmedInput);
   }
 
   return (
-    <section aria-labelledby="post-list-title">
+    <section
+      hidden={!isListPage}
+      aria-labelledby="post-list-title"
+      onClickCapture={() => {
+        scrollPosition.current = window.scrollY;
+      }}
+    >
       <h1 id="post-list-title">게시글 목록</h1>
       <SearchForm role="search" onSubmit={handleSearch}>
         <label htmlFor="post-keyword">제목 검색</label>
@@ -99,7 +146,7 @@ export default function PostListPage() {
             onChange={(event) => {
               const value = event.target.value;
               setInput(value);
-              if (!value.trim()) setKeyword('');
+              if (!value.trim()) changeKeyword('');
             }}
           />
           <SearchButton type="submit" disabled={!trimmedInput || Boolean(searchError)}>

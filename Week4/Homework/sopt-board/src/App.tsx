@@ -18,12 +18,12 @@ export default function App() {
           <>
             <BoardHeader />
             <Container>
+              <PostListPage />
               <Outlet />
             </Container>
           </>
         }
       >
-        <Route index element={<PostListPage />} />
         <Route path=":postId" element={<PostDetailPage />} />
         <Route element={<RequireAuth />}>
           <Route path="new" element={<CreatePostPage />} />
