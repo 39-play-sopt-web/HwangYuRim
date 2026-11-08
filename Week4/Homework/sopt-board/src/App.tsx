@@ -1,10 +1,20 @@
 import styled from "styled-components";
+import { Route, Routes } from 'react-router';
+import IssueCodePage from './pages/IssueCodePage';
 
 export default function App() {
   return (
-    <Container>
-      <h1>SOPT Board💌</h1>
-    </Container>
+    <Routes>
+      <Route path="/" element={<IssueCodePage />} />
+      <Route
+        path="/posts"
+        element={
+          <Container>
+            <h1>SOPT Board💌</h1>
+          </Container>
+        }
+      />
+    </Routes>
   );
 }
 
