@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import styled from 'styled-components';
 import { fetchPosts } from '../api/posts';
@@ -9,22 +9,73 @@ import PostCard from '../components/PostCard';
 export default function PostListPage() {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
-  const { data, error, isPending, isFetching, isError, refetch } = useQuery({
-    queryKey: ['posts', 'list', { keyword }],
-    queryFn: ({ signal }) => fetchPosts({ keyword: keyword || undefined }, signal),
+  const lastPostRef = useRef<HTMLLIElement>(null);
+  const {
+    data,
+    error,
+    isPending,
+    isFetching,
+    isError,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ['posts', 'list', 'infinite', { keyword }],
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) => fetchPosts({
+      keyword: keyword || undefined,
+      cursor: pageParam === 0 ? undefined : pageParam,
+    }, signal),
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.hasNext || lastPage.posts.length === 0) return undefined;
+      return lastPage.nextCursor ?? undefined;
+    },
   });
+  const posts = data?.pages.flatMap((page) => page.posts) ?? [];
   const trimmedInput = input.trim();
   const searchError = trimmedInput.length > 0 &&
     (trimmedInput.length < 2 || trimmedInput.length > 50)
     ? '검색어는 2~50자로 입력해주세요.'
     : '';
 
+  useEffect(() => {
+    const target = lastPostRef.current;
+    if (!target || !hasNextPage || isFetching || isError) return;
+
+    let active = true;
+    let requested = false;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!active || !entry?.isIntersecting || requested) return;
+
+      requested = true;
+      void fetchNextPage({ cancelRefetch: false });
+    }, { rootMargin: '200px' });
+
+    observer.observe(target);
+    return () => {
+      active = false;
+      observer.disconnect();
+    };
+  }, [fetchNextPage, hasNextPage, isFetching, isError, keyword, posts.length]);
+
+  function handleRetry() {
+    if (isFetching) return;
+
+    if (isFetchNextPageError) {
+      void fetchNextPage({ cancelRefetch: false });
+    } else {
+      void refetch();
+    }
+  }
+
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!trimmedInput || searchError) return;
 
     if (trimmedInput === keyword) {
-      if (!isFetching) void refetch();
+      handleRetry();
       return;
     }
 
@@ -58,30 +109,40 @@ export default function PostListPage() {
         {searchError && <ErrorMessage id="post-search-error">{searchError}</ErrorMessage>}
       </SearchForm>
       {isPending && <Status role="status">게시글을 불러오고 있어요.</Status>}
-      {!isPending && isFetching && <Status role="status">게시글을 갱신하고 있어요.</Status>}
+      {!isPending && isFetching && !isFetchingNextPage && (
+        <Status role="status">게시글을 갱신하고 있어요.</Status>
+      )}
+      {posts.length > 0 && (
+        <PostList>
+          {posts.map((post, index) => (
+            <li key={post.id} ref={index === posts.length - 1 ? lastPostRef : undefined}>
+              <PostCard post={post} />
+            </li>
+          ))}
+        </PostList>
+      )}
+      {isFetchingNextPage && <Status role="status">다음 게시글을 불러오고 있어요.</Status>}
       {isError && (
         <ErrorNotice>
           <ErrorMessage role="alert">
-            {isAxiosError(error)
+            {isFetchNextPageError
+              ? '다음 게시글을 불러오지 못했어요. 연결 상태를 확인하고 다시 시도해주세요.'
+              : isAxiosError(error)
               ? '게시글을 불러오지 못했어요. 연결 상태를 확인하고 다시 시도해주세요.'
               : error.message}
           </ErrorMessage>
-          <RetryButton type="button" disabled={isFetching} onClick={() => void refetch()}>
+          <RetryButton type="button" disabled={isFetching} onClick={handleRetry}>
             다시 시도
           </RetryButton>
         </ErrorNotice>
       )}
-      {data && data.posts.length > 0 && (
-        <PostList>
-          {data.posts.map((post) => (
-            <li key={post.id}><PostCard post={post} /></li>
-          ))}
-        </PostList>
-      )}
-      {data && data.posts.length === 0 && !isError && !isFetching && (
+      {data && posts.length === 0 && !isError && !isFetching && (
         <Status role="status">
           {keyword ? '검색 결과가 없어요.' : '아직 등록된 게시글이 없어요.'}
         </Status>
+      )}
+      {posts.length > 0 && !hasNextPage && !isFetching && !isError && (
+        <Status role="status">모든 게시글을 불러왔어요.</Status>
       )}
     </section>
   );
