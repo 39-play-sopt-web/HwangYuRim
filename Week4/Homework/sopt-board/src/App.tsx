@@ -1,5 +1,6 @@
 import styled from "styled-components";
-import { Route, Routes } from 'react-router';
+import { Outlet, Route, Routes } from 'react-router';
+import BoardHeader from './components/BoardHeader';
 import IssueCodePage from './pages/IssueCodePage';
 
 export default function App() {
@@ -9,11 +10,17 @@ export default function App() {
       <Route
         path="/posts"
         element={
-          <Container>
-            <h1>SOPT Board💌</h1>
-          </Container>
+          <>
+            <BoardHeader />
+            <Container>
+              <Outlet />
+            </Container>
+          </>
         }
-      />
+      >
+        <Route index element={<h1>SOPT Board💌</h1>} />
+        <Route path="new" element={<h1>글쓰기</h1>} />
+      </Route>
     </Routes>
   );
 }

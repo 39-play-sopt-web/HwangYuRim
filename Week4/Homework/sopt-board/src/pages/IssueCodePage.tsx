@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router';
 import styled from 'styled-components';
 import { issueAuthorizationCode } from '../api/members';
 import type { Part } from '../api/members';
+import { saveAuth } from '../auth';
 
 const PARTS: Part[] = ['WEB', 'iOS', 'ANDROID'];
 
@@ -16,14 +17,7 @@ export default function IssueCodePage() {
     mutationFn: async (part: Part) => {
       const authorizationCode = await issueAuthorizationCode(part);
 
-      try {
-        localStorage.setItem(
-          'sopt-board-auth',
-          JSON.stringify({ authorizationCode, part }),
-        );
-      } catch {
-        throw new Error('회원 코드를 저장하지 못했어요. 브라우저의 저장소 설정을 확인해주세요.');
-      }
+      saveAuth({ authorizationCode, part });
     },
   });
 
