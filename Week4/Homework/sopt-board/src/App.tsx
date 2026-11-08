@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { Outlet, Route, Routes } from 'react-router';
 import BoardHeader from './components/BoardHeader';
 import IssueCodePage from './pages/IssueCodePage';
+import PostListPage from './pages/PostListPage';
 
 export default function App() {
   return (
@@ -18,7 +19,7 @@ export default function App() {
           </>
         }
       >
-        <Route index element={<h1>SOPT Board💌</h1>} />
+        <Route index element={<PostListPage />} />
         <Route path="new" element={<h1>글쓰기</h1>} />
       </Route>
     </Routes>

@@ -1,0 +1,171 @@
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
+import styled from 'styled-components';
+import { fetchPosts } from '../api/posts';
+import PostCard from '../components/PostCard';
+
+export default function PostListPage() {
+  const [input, setInput] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const { data, error, isPending, isFetching, isError, refetch } = useQuery({
+    queryKey: ['posts', 'list', { keyword }],
+    queryFn: ({ signal }) => fetchPosts({ keyword: keyword || undefined }, signal),
+  });
+  const trimmedInput = input.trim();
+  const searchError = trimmedInput.length > 0 &&
+    (trimmedInput.length < 2 || trimmedInput.length > 50)
+    ? '검색어는 2~50자로 입력해주세요.'
+    : '';
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!trimmedInput || searchError) return;
+
+    if (trimmedInput === keyword) {
+      if (!isFetching) void refetch();
+      return;
+    }
+
+    setKeyword(trimmedInput);
+  }
+
+  return (
+    <section aria-labelledby="post-list-title">
+      <h1 id="post-list-title">게시글 목록</h1>
+      <SearchForm role="search" onSubmit={handleSearch}>
+        <label htmlFor="post-keyword">제목 검색</label>
+        <SearchFields>
+          <SearchInput
+            id="post-keyword"
+            name="keyword"
+            type="search"
+            placeholder="제목으로 검색"
+            value={input}
+            aria-invalid={Boolean(searchError)}
+            aria-describedby={searchError ? 'post-search-error' : undefined}
+            onChange={(event) => {
+              const value = event.target.value;
+              setInput(value);
+              if (!value.trim()) setKeyword('');
+            }}
+          />
+          <SearchButton type="submit" disabled={!trimmedInput || Boolean(searchError)}>
+            검색
+          </SearchButton>
+        </SearchFields>
+        {searchError && <ErrorMessage id="post-search-error">{searchError}</ErrorMessage>}
+      </SearchForm>
+      {isPending && <Status role="status">게시글을 불러오고 있어요.</Status>}
+      {!isPending && isFetching && <Status role="status">게시글을 갱신하고 있어요.</Status>}
+      {isError && (
+        <ErrorNotice>
+          <ErrorMessage role="alert">
+            {isAxiosError(error)
+              ? '게시글을 불러오지 못했어요. 연결 상태를 확인하고 다시 시도해주세요.'
+              : error.message}
+          </ErrorMessage>
+          <RetryButton type="button" disabled={isFetching} onClick={() => void refetch()}>
+            다시 시도
+          </RetryButton>
+        </ErrorNotice>
+      )}
+      {data && data.posts.length > 0 && (
+        <PostList>
+          {data.posts.map((post) => (
+            <li key={post.id}><PostCard post={post} /></li>
+          ))}
+        </PostList>
+      )}
+      {data && data.posts.length === 0 && !isError && !isFetching && (
+        <Status role="status">
+          {keyword ? '검색 결과가 없어요.' : '아직 등록된 게시글이 없어요.'}
+        </Status>
+      )}
+    </section>
+  );
+}
+
+const SearchForm = styled.form`
+  margin-bottom: 24px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+`;
+
+const SearchFields = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const SearchInput = styled.input`
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const SearchButton = styled.button`
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.surface};
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.primaryHover};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const PostList = styled.ul`
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+
+const Status = styled.p`
+  margin: 24px 0;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const ErrorMessage = styled.p`
+  margin: 8px 0;
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 14px;
+`;
+
+const ErrorNotice = styled.div`
+  margin: 24px 0;
+`;
+
+const RetryButton = styled.button`
+  padding: 8px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
