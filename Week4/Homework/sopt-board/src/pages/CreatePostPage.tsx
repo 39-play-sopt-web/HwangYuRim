@@ -1,51 +1,76 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
-import { Link, useNavigate } from 'react-router';
-import styled from 'styled-components';
-import { createPost } from '../api/posts';
-import { readAuth } from '../auth';
+import { useState } from "react";
+import type { SubmitEvent } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
+import { Link, useNavigate } from "react-router";
+import styled from "styled-components";
+import { createPost } from "../api/posts";
+import { readAuth } from "../auth";
 
 export default function CreatePostPage() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [author, setAuthor] = useState('');
+  const [step, setStep] = useState<"title" | "content" | "author">("title");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [author, setAuthor] = useState("");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const createPostMutation = useMutation({
     mutationFn: createPost,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['posts', 'list'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["posts", "list"] }),
   });
-  const titleError = title.length > 50 ? '제목은 50자 이하로 입력해주세요.' : '';
-  const contentError = content.length > 1000 ? '본문은 1000자 이하로 입력해주세요.' : '';
-  const authorError = author.length > 20 ? '작성자는 20자 이하로 입력해주세요.' : '';
+  const titleError =
+    title.length > 50 ? "제목은 50자 이하로 입력해주세요." : "";
+  const contentError =
+    content.length > 1000 ? "본문은 1000자 이하로 입력해주세요." : "";
+  const authorError =
+    author.length > 20 ? "작성자는 20자 이하로 입력해주세요." : "";
   const canSubmit = Boolean(
-    title.trim() && content.trim() && author.trim() &&
-    !titleError && !contentError && !authorError,
+    title.trim() &&
+    content.trim() &&
+    author.trim() &&
+    !titleError &&
+    !contentError &&
+    !authorError,
   );
+  const canProceed = {
+    title: Boolean(title.trim()) && !titleError,
+    content: Boolean(content.trim()) && !contentError,
+    author: Boolean(author.trim()) && !authorError,
+  }[step];
+  const buttonText = step === "author" ? "작성" : "Next";
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canSubmit || createPostMutation.isPending) return;
+    if (!canProceed || createPostMutation.isPending) return;
 
     if (!readAuth()) {
-      window.alert('글을 작성하려면 먼저 회원 코드를 발급받아주세요.');
-      navigate('/', { replace: true });
+      window.alert("글을 작성하려면 먼저 회원 코드를 발급받아주세요.");
+      navigate("/", { replace: true });
       return;
     }
+
+    if (step === "title") {
+      setStep("content");
+      return;
+    }
+    if (step === "content") {
+      setStep("author");
+      return;
+    }
+    if (!canSubmit) return;
 
     createPostMutation.mutate(
       { title: title.trim(), content, author: author.trim() },
       {
         onSuccess: (_post, input) => {
           window.alert(`${input.author}님의 게시글이 작성되었어요.`);
-          navigate('/posts');
+          navigate("/posts");
         },
         onError: (error) => {
           window.alert(
             isAxiosError(error)
-              ? '게시글 작성에 실패했어요. 연결 상태와 회원 코드를 확인하고 다시 시도해주세요.'
+              ? "게시글 작성에 실패했어요. 연결 상태와 회원 코드를 확인하고 다시 시도해주세요."
               : error.message,
           );
         },
@@ -58,50 +83,77 @@ export default function CreatePostPage() {
       <h1 id="create-post-title">게시글 작성</h1>
       <Form onSubmit={handleSubmit} aria-busy={createPostMutation.isPending}>
         <Fields disabled={createPostMutation.isPending}>
-          <Field>
-            <label htmlFor="post-title">제목</label>
-            <Input
-              id="post-title"
-              name="title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              aria-invalid={Boolean(titleError)}
-              aria-describedby={titleError ? 'post-title-error' : undefined}
-              required
-            />
-            {titleError && <ErrorMessage id="post-title-error">{titleError}</ErrorMessage>}
-          </Field>
-          <Field>
-            <label htmlFor="post-content">본문</label>
-            <TextArea
-              id="post-content"
-              name="content"
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              aria-invalid={Boolean(contentError)}
-              aria-describedby={contentError ? 'post-content-error' : undefined}
-              required
-            />
-            {contentError && <ErrorMessage id="post-content-error">{contentError}</ErrorMessage>}
-          </Field>
-          <Field>
-            <label htmlFor="post-author">작성자</label>
-            <Input
-              id="post-author"
-              name="author"
-              value={author}
-              onChange={(event) => setAuthor(event.target.value)}
-              aria-invalid={Boolean(authorError)}
-              aria-describedby={authorError ? 'post-author-error' : undefined}
-              required
-            />
-            {authorError && <ErrorMessage id="post-author-error">{authorError}</ErrorMessage>}
-          </Field>
+          {step === "title" && (
+            <Field>
+              <label htmlFor="post-title">제목</label>
+              <Input
+                id="post-title"
+                name="title"
+                autoFocus
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                aria-invalid={Boolean(titleError)}
+                aria-describedby={titleError ? "post-title-error" : undefined}
+                required
+              />
+              {titleError && (
+                <ErrorMessage id="post-title-error">{titleError}</ErrorMessage>
+              )}
+            </Field>
+          )}
+          {step === "content" && (
+            <Field>
+              <label htmlFor="post-content">본문</label>
+              <TextArea
+                id="post-content"
+                name="content"
+                autoFocus
+                value={content}
+                onChange={(event) => setContent(event.target.value)}
+                aria-invalid={Boolean(contentError)}
+                aria-describedby={
+                  contentError
+                    ? "post-content-count post-content-error"
+                    : "post-content-count"
+                }
+                required
+              />
+              <Counter id="post-content-count">{content.length} / 1000</Counter>
+              {contentError && (
+                <ErrorMessage id="post-content-error">
+                  {contentError}
+                </ErrorMessage>
+              )}
+            </Field>
+          )}
+          {step === "author" && (
+            <Field>
+              <label htmlFor="post-author">작성자</label>
+              <Input
+                id="post-author"
+                name="author"
+                autoFocus
+                value={author}
+                onChange={(event) => setAuthor(event.target.value)}
+                aria-invalid={Boolean(authorError)}
+                aria-describedby={authorError ? "post-author-error" : undefined}
+                required
+              />
+              {authorError && (
+                <ErrorMessage id="post-author-error">
+                  {authorError}
+                </ErrorMessage>
+              )}
+            </Field>
+          )}
         </Fields>
         <Actions>
           <ListLink to="/posts">목록으로</ListLink>
-          <SubmitButton type="submit" disabled={!canSubmit || createPostMutation.isPending}>
-            {createPostMutation.isPending ? '작성 중…' : '작성'}
+          <SubmitButton
+            type="submit"
+            disabled={!canProceed || createPostMutation.isPending}
+          >
+            {createPostMutation.isPending ? "작성 중…" : buttonText}
           </SubmitButton>
         </Actions>
       </Form>
@@ -154,6 +206,13 @@ const TextArea = styled.textarea`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.text};
   resize: vertical;
+`;
+
+const Counter = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 13px;
+  text-align: right;
 `;
 
 const ErrorMessage = styled.p`

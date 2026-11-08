@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { SubmitEvent } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import styled from 'styled-components';
@@ -70,7 +70,7 @@ export default function PostListPage() {
     }
   }
 
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
+  function handleSearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!trimmedInput || searchError) return;
 

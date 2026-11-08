@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { SubmitEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -71,7 +71,7 @@ function EditPostForm({ post }: { post: Post }) {
   const contentError = content.length > 1000 ? '본문은 1000자 이하로 입력해주세요.' : '';
   const canSubmit = Boolean(title.trim() && content.trim() && !titleError && !contentError);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || updatePostMutation.isPending) return;
 
