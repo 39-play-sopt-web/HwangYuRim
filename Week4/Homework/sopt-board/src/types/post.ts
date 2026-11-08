@@ -18,3 +18,8 @@ export interface CreatePostInput {
   content: string;
   author: string;
 }
+
+export interface UpdatePostInput {
+  title: string;
+  content: string;
+}

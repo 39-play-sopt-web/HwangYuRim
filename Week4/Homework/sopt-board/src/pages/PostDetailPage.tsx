@@ -47,6 +47,9 @@ export default function PostDetailPage() {
             </time>
           </Information>
           <Content>{post.content}</Content>
+          <Actions>
+            <EditLink to={`/posts/${post.id}/edit`}>수정</EditLink>
+          </Actions>
         </Article>
       )}
     </section>
@@ -96,6 +99,22 @@ const Content = styled.p`
 const Message = styled.p`
   margin: 16px 0;
   color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const Actions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const EditLink = styled(Link)`
+  padding: 8px 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.text};
+  text-decoration: none;
 `;
 
 const ErrorNotice = styled.div`

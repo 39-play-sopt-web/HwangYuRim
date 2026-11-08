@@ -5,6 +5,7 @@ import IssueCodePage from './pages/IssueCodePage';
 import PostListPage from './pages/PostListPage';
 import CreatePostPage from './pages/CreatePostPage';
 import PostDetailPage from './pages/PostDetailPage';
+import EditPostPage from './pages/EditPostPage';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route index element={<PostListPage />} />
         <Route path="new" element={<CreatePostPage />} />
         <Route path=":postId" element={<PostDetailPage />} />
+        <Route path=":postId/edit" element={<EditPostPage />} />
       </Route>
     </Routes>
   );

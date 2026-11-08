@@ -1,6 +1,6 @@
 import { client } from './client';
 import { readAuth } from '../auth';
-import type { CreatePostInput, Post, PostSlice } from '../types/post';
+import type { CreatePostInput, Post, PostSlice, UpdatePostInput } from '../types/post';
 
 interface PostListParams {
   keyword?: string;
@@ -55,6 +55,23 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
 
   if (!data.isSuccess || !data.data) {
     throw new Error('게시글 작성에 실패했어요. 다시 시도해주세요.');
+  }
+
+  return data.data;
+}
+
+export async function updatePost(postId: number, input: UpdatePostInput): Promise<Post> {
+  const auth = readAuth();
+  if (!auth) {
+    throw new Error('글을 수정하려면 먼저 회원 코드를 발급받아주세요.');
+  }
+
+  const { data } = await client.put<PostResponse<Post>>(`/posts/${postId}`, input, {
+    headers: { Authorization: auth.authorizationCode },
+  });
+
+  if (!data.isSuccess || !data.data) {
+    throw new Error('게시글 수정에 실패했어요. 다시 시도해주세요.');
   }
 
   return data.data;
