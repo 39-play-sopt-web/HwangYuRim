@@ -3,6 +3,7 @@ import { Outlet, Route, Routes } from 'react-router';
 import BoardHeader from './components/BoardHeader';
 import IssueCodePage from './pages/IssueCodePage';
 import PostListPage from './pages/PostListPage';
+import CreatePostPage from './pages/CreatePostPage';
 
 export default function App() {
   return (
@@ -20,7 +21,7 @@ export default function App() {
         }
       >
         <Route index element={<PostListPage />} />
-        <Route path="new" element={<h1>글쓰기</h1>} />
+        <Route path="new" element={<CreatePostPage />} />
       </Route>
     </Routes>
   );
