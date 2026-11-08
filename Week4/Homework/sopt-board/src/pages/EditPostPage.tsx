@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios';
 import { Link, useNavigate, useParams } from 'react-router';
 import styled from 'styled-components';
 import { fetchPost, updatePost } from '../api/posts';
+import { readAuth } from '../auth';
 import type { Post, UpdatePostInput } from '../types/post';
 
 export default function EditPostPage() {
@@ -73,6 +74,12 @@ function EditPostForm({ post }: { post: Post }) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || updatePostMutation.isPending) return;
+
+    if (!readAuth()) {
+      window.alert('글을 수정하려면 먼저 회원 코드를 발급받아주세요.');
+      navigate('/', { replace: true });
+      return;
+    }
 
     updatePostMutation.mutate(
       { title: title.trim(), content },

@@ -3,6 +3,7 @@ import { isAxiosError } from 'axios';
 import { Link, useNavigate, useParams } from 'react-router';
 import styled from 'styled-components';
 import { deletePost, fetchPost } from '../api/posts';
+import { readAuth } from '../auth';
 
 export default function PostDetailPage() {
   const { postId: postIdParam = '' } = useParams();
@@ -30,6 +31,13 @@ export default function PostDetailPage() {
 
   function handleDelete() {
     if (!post || deletePostMutation.isPending) return;
+
+    if (!readAuth()) {
+      window.alert('글을 삭제하려면 먼저 회원 코드를 발급받아주세요.');
+      navigate('/', { replace: true });
+      return;
+    }
+
     if (!window.confirm('정말 삭제하시겠어요?')) return;
 
     deletePostMutation.mutate(post.id, {

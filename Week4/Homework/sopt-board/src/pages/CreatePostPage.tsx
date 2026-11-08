@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios';
 import { Link, useNavigate } from 'react-router';
 import styled from 'styled-components';
 import { createPost } from '../api/posts';
+import { readAuth } from '../auth';
 
 export default function CreatePostPage() {
   const [title, setTitle] = useState('');
@@ -27,6 +28,12 @@ export default function CreatePostPage() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || createPostMutation.isPending) return;
+
+    if (!readAuth()) {
+      window.alert('글을 작성하려면 먼저 회원 코드를 발급받아주세요.');
+      navigate('/', { replace: true });
+      return;
+    }
 
     createPostMutation.mutate(
       { title: title.trim(), content, author: author.trim() },

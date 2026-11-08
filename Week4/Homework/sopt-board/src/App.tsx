@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { Outlet, Route, Routes } from 'react-router';
 import BoardHeader from './components/BoardHeader';
+import RequireAuth from './components/RequireAuth';
 import IssueCodePage from './pages/IssueCodePage';
 import PostListPage from './pages/PostListPage';
 import CreatePostPage from './pages/CreatePostPage';
@@ -23,9 +24,11 @@ export default function App() {
         }
       >
         <Route index element={<PostListPage />} />
-        <Route path="new" element={<CreatePostPage />} />
         <Route path=":postId" element={<PostDetailPage />} />
-        <Route path=":postId/edit" element={<EditPostPage />} />
+        <Route element={<RequireAuth />}>
+          <Route path="new" element={<CreatePostPage />} />
+          <Route path=":postId/edit" element={<EditPostPage />} />
+        </Route>
       </Route>
     </Routes>
   );
