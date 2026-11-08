@@ -31,6 +31,18 @@ export async function fetchPosts(
   return data.data;
 }
 
+export async function fetchPost(postId: number, signal?: AbortSignal): Promise<Post> {
+  const { data } = await client.get<PostResponse<Post>>(`/posts/${postId}`, {
+    signal,
+  });
+
+  if (!data.isSuccess || !data.data) {
+    throw new Error('게시글을 불러오지 못했어요. 다시 시도해주세요.');
+  }
+
+  return data.data;
+}
+
 export async function createPost(input: CreatePostInput): Promise<Post> {
   const auth = readAuth();
   if (!auth) {

@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { Link } from 'react-router';
 import type { Post } from '../types/post';
 
 interface PostCardProps {
@@ -7,7 +8,7 @@ interface PostCardProps {
 
 export default function PostCard({ post }: PostCardProps) {
   return (
-    <Card>
+    <Card to={`/posts/${post.id}`}>
       <Title>{post.title}</Title>
       <Preview>{post.content}</Preview>
       <Information>
@@ -20,12 +21,21 @@ export default function PostCard({ post }: PostCardProps) {
   );
 }
 
-const Card = styled.article`
+const Card = styled(Link)`
+  display: block;
   padding: 24px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+  text-decoration: none;
   overflow-wrap: anywhere;
+  transition: border-color 150ms ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
 `;
 
 const Title = styled.h2`

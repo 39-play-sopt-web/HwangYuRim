@@ -4,6 +4,7 @@ import BoardHeader from './components/BoardHeader';
 import IssueCodePage from './pages/IssueCodePage';
 import PostListPage from './pages/PostListPage';
 import CreatePostPage from './pages/CreatePostPage';
+import PostDetailPage from './pages/PostDetailPage';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
       >
         <Route index element={<PostListPage />} />
         <Route path="new" element={<CreatePostPage />} />
+        <Route path=":postId" element={<PostDetailPage />} />
       </Route>
     </Routes>
   );
