@@ -38,7 +38,7 @@ export default function CreatePostPage() {
     content: Boolean(content.trim()) && !contentError,
     author: Boolean(author.trim()) && !authorError,
   }[step];
-  const buttonText = step === "author" ? "작성" : "Next";
+  const buttonText = step === "author" ? "UPload" : "Next";
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -149,6 +149,15 @@ export default function CreatePostPage() {
         </Fields>
         <Actions>
           <ListLink to="/posts">목록으로</ListLink>
+          {step !== "title" && (
+            <PreviousButton
+              type="button"
+              disabled={createPostMutation.isPending}
+              onClick={() => setStep(step === "author" ? "content" : "title")}
+            >
+              Before
+            </PreviousButton>
+          )}
           <SubmitButton
             type="submit"
             disabled={!canProceed || createPostMutation.isPending}
@@ -255,5 +264,15 @@ const SubmitButton = styled.button`
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+`;
+
+const PreviousButton = styled(SubmitButton)`
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text};
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.background};
   }
 `;
